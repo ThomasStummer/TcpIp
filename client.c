@@ -10,5 +10,5 @@
 // Test Source File
 int main(int argc, char * argv[])
 {
-	printf("Hi!");
+	printf("Hi you!");
 }
