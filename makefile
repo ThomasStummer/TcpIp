@@ -1,10 +1,19 @@
-all: client
+
+CFLAGS: -Wall -Werror -Wextra -Wstrict-prototypes -pedantic -fno-common -O3 -g -std=gnu11
+
+all: simple_message_client simple_message_server
 
 clean:
-	rm client.o client
+	rm simple_message_client.o simple_message_client simple_message_server.o simple_message_server
 
-client: client.o
-	gcc -g -o client client.o
+simple_message_client: simple_message_client.o
+	gcc -g -o simple_message_client simple_message_client.o
 
-client.o:
-	gcc -c -g client.c
+simple_message_client.o:
+	gcc -c -g simple_message_client.c
+	
+simple_message_server: simple_message_server.o
+	gcc -g -o simple_message_server simple_message_server.o
+
+simple_message_server.o:
+	gcc -c -g simple_message_server.c
