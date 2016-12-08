@@ -124,7 +124,7 @@ int main(int argc, const char * const argv[])
 {
 	struct addrinfo addrInfoSettings;
 	struct addrinfo * addrInfoResults, * addrInfoResultsPtr;
-	int socketDescriptor = 0;
+	int socketDescriptor = 0, acceptedSocketDescriptor = 0;
 	const struct sockaddr sockAddr;
 	const char * port;
 	int r=0;
@@ -165,17 +165,20 @@ int main(int argc, const char * const argv[])
 			continue;	// Try next
 		}
 
-		if(bind(socketDescriptor, &(addrInfoResultsPtr->ai_addr), addrInfoResultsPtr->ai_addrlen) == 0)
+		if(bind(socketDescriptor, addrInfoResultsPtr->ai_addr, addrInfoResultsPtr->ai_addrlen) == 0)
 		{
 			break;	// Success
 		}
 
-		close(socketDescriptor); 	// bind() failed
+		// bind() failed
+		if(close(socketDescriptor) == -1)
+		{
+			PrintError("main() -> close()", true, NULL);
+		}
 	}
 
 	if(addrInfoResultsPtr == NULL)
 	{
-
 		// Wasn't able to bind any address
 		PrintError("main()", true, "Could not bind to any address");
 		return EXIT_FAILURE;
@@ -190,31 +193,37 @@ int main(int argc, const char * const argv[])
 		return EXIT_FAILURE;
 	}
 
-	/*
-	accept();
-
-	bind();
+	// accept muss noch in eine Schleife rein!!!
+	acceptedSocketDescriptor = accept(socketDescriptor, addrInfoResultsPtr->ai_addr, &(addrInfoResultsPtr->ai_addrlen));
+	if(acceptedSocketDescriptor == -1)
+	{
+		PrintError("main() -> accept()", true, NULL);
+		return EXIT_FAILURE;
+	}
 
 	// spawn()
 
-	fork();
+		// fork();
 
-	execute();
-
-
-	read();
-
-	write();
+			// execute();
 
 
-	read();
+	//read();
+
+	//write();
+
+
+	//read();
+
 	// Close connection
-	close();
-
-*/
-
 	if(socketDescriptor != -1)
-		close(socketDescriptor);	// for testing
+	{
+		if(close(socketDescriptor) == -1)
+		{
+			PrintError("main() -> close()", true, NULL);
+			return EXIT_FAILURE;
+		}
+	}
 
 	printf("ServerFunc main() exits now\n");
 }
