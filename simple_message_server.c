@@ -252,13 +252,13 @@ int main(int argc, const char * const argv[])
 				//CloseConnection(socketDescriptor);
 				printf("\nChild: close(socketDesc. failed\n"); 	// DELETE THIS DEBUGGING LINE	_Exit(EXIT_FAILURE);
 			}
-
+*/
 			// Redirect stdin
 			if (dup2(acceptedSocketDescriptor, STDIN_FILENO) == -1)
 			{
 				PrintError("Child process: main() -> dup2()", true, NULL);
 				//CloseConnection(socketDescriptor);
-				printf("\nChild: dup2 -1 failed\n"); 	// DELETE THIS DEBUGGING LINE _Exit(EXIT_FAILURE);
+				fprintf(stderr,"\nChild: dup2 -1 failed\n"); 	// DELETE THIS DEBUGGING LINE _Exit(EXIT_FAILURE);
 			}
 
 			// Redirect stdout
@@ -267,11 +267,11 @@ int main(int argc, const char * const argv[])
 				PrintError("Child process: main() -> dup2()", true, NULL);
 				//CloseConnection(socketDescriptor);
 				close(STDIN_FILENO); // return Wert checken!
-				printf("\nChild: dup2 -2 failed\n"); 	// DELETE THIS DEBUGGING LINE      _Exit(EXIT_FAILURE);
+				fprintf(stderr,"\nChild: dup2 -2 failed\n"); 	// DELETE THIS DEBUGGING LINE      _Exit(EXIT_FAILURE);
 			}
-			printf("\nChild redirected stdio\n"); 	// DELETE THIS DEBUGGING LINE
+			fprintf(stderr, "\nChild redirected stdio\n"); 	// DELETE THIS DEBUGGING LINE
 			// Close unneeded descriptor
-			if (close(acceptedSocketDescriptor) == -1)
+/*			if (close(acceptedSocketDescriptor) == -1)
 			{
 				PrintError("Child process: main() -> dup2()", true, NULL);
 				//CloseConnection(socketDescriptor);
