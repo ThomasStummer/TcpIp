@@ -15,11 +15,14 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
+#include <unistd.h>
 
 
 #define EXIT_SUCCESS 0
 #define EXIT_FAILURE 1
 #define BACKLOG 10
+#define SERVER_LOGIC_PATH "/usr/local/bin/simple_message_server_logic"
+#define SERVER_LOGIC_FILE "simple_message_server_logic"
 
 const char * programName;
 const char * usageText = 	"usage: simple_message_server options\n"
@@ -119,6 +122,23 @@ void SpecifyAddrInfo(struct addrinfo * hints)
 	hints->ai_flags = AI_PASSIVE;   	/* Server is passive */
 }
 
+int CloseConnection(int socketDescriptor)
+{
+	if(socketDescriptor != -1)
+	{
+		if(close(socketDescriptor) == -1)
+		{
+			PrintError("main() -> close()", true, NULL);
+			return EXIT_FAILURE;
+		}
+		return EXIT_SUCCESS;
+	}
+	else
+	{
+		return EXIT_FAILURE;
+	}
+}
+
 // Test Source File
 int main(int argc, const char * const argv[])
 {
@@ -128,6 +148,7 @@ int main(int argc, const char * const argv[])
 	const struct sockaddr sockAddr;
 	const char * port;
 	int r=0;
+	pid_t pid = -1;
 
 	programName = argv[0];
 
@@ -171,9 +192,10 @@ int main(int argc, const char * const argv[])
 		}
 
 		// bind() failed
-		if(close(socketDescriptor) == -1)
+		if(CloseConnection(socketDescriptor) == EXIT_FAILURE)
 		{
-			PrintError("main() -> close()", true, NULL);
+			PrintError("main() -> CloseConnection()", true, NULL);
+			return EXIT_FAILURE;
 		}
 	}
 
@@ -193,37 +215,90 @@ int main(int argc, const char * const argv[])
 		return EXIT_FAILURE;
 	}
 
-	// accept muss noch in eine Schleife rein!!!
-	acceptedSocketDescriptor = accept(socketDescriptor, addrInfoResultsPtr->ai_addr, &(addrInfoResultsPtr->ai_addrlen));
-	if(acceptedSocketDescriptor == -1)
+	// accept in schleife
+	for(;;)
 	{
-		PrintError("main() -> accept()", true, NULL);
+		acceptedSocketDescriptor = accept(socketDescriptor, addrInfoResultsPtr->ai_addr, &(addrInfoResultsPtr->ai_addrlen));
+		if(acceptedSocketDescriptor == -1)
+		{
+			PrintError("main() -> accept()", true, NULL);
+			return EXIT_FAILURE;
+		}
+
+
+
+		// spawn()
+		pid = fork();
+
+		if(pid == -1)
+		{
+			PrintError("main() -> fork()", true, NULL);
+			CloseConnection(socketDescriptor);
+			return EXIT_FAILURE;
+		}
+
+		if(pid == 0) 	// Child process
+		{
+			// Close unneeded descriptor
+			if (close(acceptedSocketDescriptor) == -1)
+			{
+				PrintError("Child process: main() -> close()", true, NULL);
+				CloseConnection(socketDescriptor);
+				_Exit(EXIT_FAILURE);
+			}
+
+			// Redirect stdin
+			if (dup2(socketDescriptor, STDIN_FILENO) == -1)
+			{
+				PrintError("Child process: main() -> dup2()", true, NULL);
+				CloseConnection(socketDescriptor);
+				_Exit(EXIT_FAILURE);
+			}
+
+			// Redirect stdout
+			if (dup2(socketDescriptor, STDOUT_FILENO) == -1)
+			{
+				PrintError("Child process: main() -> dup2()", true, NULL);
+				CloseConnection(socketDescriptor);
+				close(STDIN_FILENO); // return Wert checken!
+				_Exit(EXIT_FAILURE);
+			}
+
+			// Close unneeded descriptor
+			if (close(socketDescriptor) == -1)
+			{
+				PrintError("Child process: main() -> dup2()", true, NULL);
+				CloseConnection(socketDescriptor);
+				close(STDIN_FILENO); // return Wert checken!
+				close(STDOUT_FILENO); // return Wert checken!
+				_Exit(EXIT_FAILURE);
+			}
+
+			// Execute server logic program
+			execl(SERVER_LOGIC_PATH, SERVER_LOGIC_FILE, (char *) NULL);
+			// Child process is not allowed to reach this point
+			PrintError("main()", true, "Child process reached unallowed source region");
+			_Exit(EXIT_FAILURE);
+		}
+
+		// No error and not child process -> parent process
+
+		// Close connection
+
+		if(CloseConnection(socketDescriptor) == EXIT_FAILURE)
+		{
+			return EXIT_FAILURE;
+		}
+
+	}
+
+	// Close unneeded descriptor
+	if (close(acceptedSocketDescriptor) == -1)
+	{
+		PrintError("main() -> close()", true, NULL);
 		return EXIT_FAILURE;
 	}
 
-	// spawn()
-
-		// fork();
-
-			// execute();
-
-
-	//read();
-
-	//write();
-
-
-	//read();
-
-	// Close connection
-	if(socketDescriptor != -1)
-	{
-		if(close(socketDescriptor) == -1)
-		{
-			PrintError("main() -> close()", true, NULL);
-			return EXIT_FAILURE;
-		}
-	}
-
 	printf("ServerFunc main() exits now\n");
+	return EXIT_SUCCESS;
 }
