@@ -27,7 +27,7 @@
 const char * programName;
 const char * usageText = 	"usage: simple_message_server options\n"
 							"options:\n"
-							"\t-p, --port <port>	well-known port of the server [0..65535]\n"
+							"\t-p, --port <port>	port of the server [0..65535]\n"
 							"\t-h, --help\n";
 
 void PrintError(char * funcName, bool evalErrno, const char * message);
@@ -149,16 +149,18 @@ int main(int argc, const char * const argv[])
 	const char * port;
 	int r=0;
 	pid_t pid = -1;
+	int status = 0;
+	pid_t wait_pid = -1;
+	int i=0;
 
 	programName = argv[0];
 
 	// ParseArguments
-	//ParseArguments();
-
 	if(smc_parsecommandline(argc, argv, &port) == EXIT_FAILURE)
 	{
 		return EXIT_FAILURE; 	//  Fallunterscheidung zw. failure und ok return der Func fehlt!!
 	}
+
 
 	// Open passive connection
 
@@ -216,7 +218,7 @@ int main(int argc, const char * const argv[])
 	}
 
 	// accept in schleife
-	for(;;)
+//	for(;;)
 	{
 		acceptedSocketDescriptor = accept(socketDescriptor, addrInfoResultsPtr->ai_addr, &(addrInfoResultsPtr->ai_addrlen));
 		if(acceptedSocketDescriptor == -1)
@@ -230,75 +232,122 @@ int main(int argc, const char * const argv[])
 		// spawn()
 		pid = fork();
 
+		printf("\nAfter fork\n"); 	// DELETE THIS DEBUGGING LINE
+
 		if(pid == -1)
 		{
 			PrintError("main() -> fork()", true, NULL);
 			CloseConnection(socketDescriptor);
+			// close acc.s.desc?
 			return EXIT_FAILURE;
 		}
 
 		if(pid == 0) 	// Child process
 		{
+			printf("\nI am child\n"); 	// DELETE THIS DEBUGGING LINE
 			// Close unneeded descriptor
-			if (close(acceptedSocketDescriptor) == -1)
+		/*	if (close(socketDescriptor) == -1)
 			{
 				PrintError("Child process: main() -> close()", true, NULL);
-				CloseConnection(socketDescriptor);
-				_Exit(EXIT_FAILURE);
+				//CloseConnection(socketDescriptor);
+				printf("\nChild: close(socketDesc. failed\n"); 	// DELETE THIS DEBUGGING LINE	_Exit(EXIT_FAILURE);
 			}
 
 			// Redirect stdin
-			if (dup2(socketDescriptor, STDIN_FILENO) == -1)
+			if (dup2(acceptedSocketDescriptor, STDIN_FILENO) == -1)
 			{
 				PrintError("Child process: main() -> dup2()", true, NULL);
-				CloseConnection(socketDescriptor);
-				_Exit(EXIT_FAILURE);
+				//CloseConnection(socketDescriptor);
+				printf("\nChild: dup2 -1 failed\n"); 	// DELETE THIS DEBUGGING LINE _Exit(EXIT_FAILURE);
 			}
 
 			// Redirect stdout
-			if (dup2(socketDescriptor, STDOUT_FILENO) == -1)
+			if (dup2(acceptedSocketDescriptor, STDOUT_FILENO) == -1)
 			{
 				PrintError("Child process: main() -> dup2()", true, NULL);
-				CloseConnection(socketDescriptor);
+				//CloseConnection(socketDescriptor);
 				close(STDIN_FILENO); // return Wert checken!
-				_Exit(EXIT_FAILURE);
+				printf("\nChild: dup2 -2 failed\n"); 	// DELETE THIS DEBUGGING LINE      _Exit(EXIT_FAILURE);
 			}
-
+			printf("\nChild redirected stdio\n"); 	// DELETE THIS DEBUGGING LINE
 			// Close unneeded descriptor
-			if (close(socketDescriptor) == -1)
+			if (close(acceptedSocketDescriptor) == -1)
 			{
 				PrintError("Child process: main() -> dup2()", true, NULL);
-				CloseConnection(socketDescriptor);
+				//CloseConnection(socketDescriptor);
 				close(STDIN_FILENO); // return Wert checken!
 				close(STDOUT_FILENO); // return Wert checken!
 				_Exit(EXIT_FAILURE);
 			}
-
+*/
 			// Execute server logic program
 			execl(SERVER_LOGIC_PATH, SERVER_LOGIC_FILE, (char *) NULL);
 			// Child process is not allowed to reach this point
 			PrintError("main()", true, "Child process reached unallowed source region");
 			_Exit(EXIT_FAILURE);
+
+			printf("\n%d\n", ++i); 	// DELETE THIS DEBUGGING LINE
 		}
 
 		// No error and not child process -> parent process
 
-		// Close connection
+		printf("\nI am parent\n"); 	// DELETE THIS DEBUGGING LINE
 
-		if(CloseConnection(socketDescriptor) == EXIT_FAILURE)
-		{
-			return EXIT_FAILURE;
-		}
-
+/*
+		// Close unneeded descriptor
+			if (close(acceptedSocketDescriptor) == -1)
+			{
+				PrintError("main() -> close()", true, NULL);
+				return EXIT_FAILURE;
+			}
+*/
 	}
 
-	// Close unneeded descriptor
-	if (close(acceptedSocketDescriptor) == -1)
+	// Wait for child process to prevent it from becoming a zombie process
+	while((wait_pid = waitpid(pid, &status, 0)) != pid)
 	{
-		PrintError("main() -> close()", true, NULL);
+		if (wait_pid == -1)
+		{
+			/* eintr: unterbrechung -> nochmal probieren */
+			if (errno == EINTR)
+			{
+				continue;
+			}
+			/* wenn nicht errno EINTR ist, dann passt etwas nicht und es wird errno gesetzt und auch pid und openfile zurueck */
+			errno = ECHILD;
+			pid = -1;
+			return EXIT_FAILURE;
+		}
+	}
+
+	printf("\nParent: Child terminated\n"); 	// DELETE THIS DEBUGGING LINE
+
+	/* schaut sich hier an, "wie" beendet worden ist, ob ordnungsgemaess oder nicht */
+	if (WIFEXITED(status))
+	{
+		pid = -1;
+		//return WEXITSTATUS(status);
+	}
+	else
+	{
+		errno = ECHILD;
+		pid = -1;
 		return EXIT_FAILURE;
 	}
 
-	printf("ServerFunc main() exits now\n");
+	//test close here
+	// Close unneeded descriptor
+				if (close(acceptedSocketDescriptor) == -1)
+				{
+					PrintError("main() -> close()", true, NULL);
+					return EXIT_FAILURE;
+				}
+
+	if(CloseConnection(socketDescriptor) == EXIT_FAILURE)
+				{
+					return EXIT_FAILURE;
+				}
+
+	printf("ServerFunc main() exits successfully now\n");
 	return EXIT_SUCCESS;
 }
