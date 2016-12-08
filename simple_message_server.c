@@ -20,14 +20,14 @@
 #define EXIT_SUCCESS 0
 #define EXIT_FAILURE 1
 
-const char * programName = "simple_message_server";
+const char * programName;
 const char * usageText = 	"usage: simple_message_server options\n"
 							"options:\n"
 							"\t-p, --port <port>	well-known port of the server [0..65535]\n"
 							"\t-h, --help\n";
 
 void PrintError(char * funcName, bool evalErrno, const char * message);
-void SpecifyAddrInfo(struct addrinfo hints);
+void SpecifyAddrInfo(struct addrinfo * hints);
 // Adopted from file simple_message_client_commandline_handling.c from (R) Prof.
 int smc_parsecommandline(
     int argc,
@@ -90,39 +90,36 @@ int smc_parsecommandline(
 
 void PrintError(char * funcName, bool evalErrno, const char * message)
 {
-	char * errorMessage = "Error in program ";
-	strcat(errorMessage, programName);
-	strcat(errorMessage, ": function ");
-	strcat(errorMessage, funcName);
+	fprintf(stderr, "Error in program ");
+	fprintf(stderr, programName);
+	fprintf(stderr, ": function ");
+	fprintf(stderr, funcName);
 
 	if(message != NULL)
 	{
-		strcat(errorMessage, ": ");
-		strcat(errorMessage, message);
+		fprintf(stderr, ": ");
+		fprintf(stderr, message);
 	}
 
 	if(evalErrno)
 	{
-		strcat(errorMessage, ": ");
-		strcat(errorMessage, strerror(errno));
+		fprintf(stderr, ": ");
+		fprintf(stderr, strerror(errno));
 	}
 
-	strcat(errorMessage, "\n");
-
-	fprintf(stderr, errorMessage);
+	fprintf(stderr, "\n");
 }
 
-
-void SpecifyAddrInfo(struct addrinfo hints)
+void SpecifyAddrInfo(struct addrinfo * hints)
 {
 	memset(&hints, 0, sizeof(struct addrinfo));
-	hints.ai_family = AF_INET;    		/* IPv4 */
-	hints.ai_socktype = SOCK_STREAM;	/* TCP */
-	hints.ai_flags = AI_PASSIVE;   		/* For wildcard IP address */
-	hints.ai_protocol = 0;         		/* Any protocol */
-	hints.ai_canonname = NULL;
-	hints.ai_addr = NULL;
-	hints.ai_next = NULL;
+	hints->ai_family = AF_INET;    		/* IPv4 */
+	hints->ai_socktype = SOCK_STREAM;	/* TCP */
+	hints->ai_flags = AI_PASSIVE;   	/* Server is passive */
+	hints->ai_protocol = 0;         	/* Any protocol */
+	hints->ai_canonname = NULL;
+	hints->ai_addr = NULL;
+	hints->ai_next = NULL;
 }
 
 // Test Source File
@@ -135,6 +132,8 @@ int main(int argc, const char * const argv[])
 	const char * port;
 	int r=0;
 
+	programName = argv[0];
+
 	// ParseArguments
 	//ParseArguments();
 
@@ -145,12 +144,12 @@ int main(int argc, const char * const argv[])
 printf("%s", port);
 	// Open passive connection
 
-	SpecifyAddrInfo(addrInfoSettings);
+	SpecifyAddrInfo(&addrInfoSettings);
 
 	r = getaddrinfo(NULL, port, &addrInfoSettings, &addrInfoResults);
 	if(r != 0)
 	{
-		PrintError("main() > getaddrinfo()", false, gai_strerror(r));
+		PrintError("main() -> getaddrinfo()", false, gai_strerror(r));
 		return EXIT_FAILURE;
 	}
 
