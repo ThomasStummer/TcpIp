@@ -1,8 +1,12 @@
 /*
- * server.c
+ * simple_message_server.c
  *
- *  Created on: 28.11.2016
- *      Author: thomas
+ *  VCS - TCP/IP
+ *  BIC
+ *  3A1
+ *
+ *  Authors: ic15b008 Matula Patrick
+ *    		 ic15b079 Stummer Thomas
  */
 
 // Includes
