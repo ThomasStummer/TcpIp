@@ -19,6 +19,7 @@
 
 #define EXIT_SUCCESS 0
 #define EXIT_FAILURE 1
+#define BACKLOG 10
 
 const char * programName;
 const char * usageText = 	"usage: simple_message_server options\n"
@@ -112,14 +113,10 @@ void PrintError(char * funcName, bool evalErrno, const char * message)
 
 void SpecifyAddrInfo(struct addrinfo * hints)
 {
-	memset(&hints, 0, sizeof(struct addrinfo));
+	memset(hints, 0, sizeof(struct addrinfo));
 	hints->ai_family = AF_INET;    		/* IPv4 */
 	hints->ai_socktype = SOCK_STREAM;	/* TCP */
 	hints->ai_flags = AI_PASSIVE;   	/* Server is passive */
-	hints->ai_protocol = 0;         	/* Any protocol */
-	hints->ai_canonname = NULL;
-	hints->ai_addr = NULL;
-	hints->ai_next = NULL;
 }
 
 // Test Source File
@@ -141,10 +138,11 @@ int main(int argc, const char * const argv[])
 	{
 		return EXIT_FAILURE; 	//  Fallunterscheidung zw. failure und ok return der Func fehlt!!
 	}
-printf("%s", port);
+
 	// Open passive connection
 
 	SpecifyAddrInfo(&addrInfoSettings);
+
 
 	r = getaddrinfo(NULL, port, &addrInfoSettings, &addrInfoResults);
 	if(r != 0)
@@ -159,15 +157,15 @@ printf("%s", port);
 	{
 
 
-		socketDescriptor = socket(addrInfoSettings.ai_family,
-								  addrInfoSettings.ai_socktype,
-								  addrInfoSettings.ai_protocol);
+		socketDescriptor = socket(addrInfoResultsPtr->ai_family,
+									addrInfoResultsPtr->ai_socktype,
+									addrInfoResultsPtr->ai_protocol);
 		if(socketDescriptor == -1)
 		{
 			continue;	// Try next
 		}
 
-		if(bind(socketDescriptor, &sockAddr, sizeof(addrInfoSettings)) == 0)
+		if(bind(socketDescriptor, &(addrInfoResultsPtr->ai_addr), addrInfoResultsPtr->ai_addrlen) == 0)
 		{
 			break;	// Success
 		}
@@ -177,6 +175,7 @@ printf("%s", port);
 
 	if(addrInfoResultsPtr == NULL)
 	{
+
 		// Wasn't able to bind any address
 		PrintError("main()", true, "Could not bind to any address");
 		return EXIT_FAILURE;
@@ -184,9 +183,14 @@ printf("%s", port);
 
 	freeaddrinfo(addrInfoResults);
 
-	/*
-	listen();
 
+	if(listen(socketDescriptor, BACKLOG) == -1)
+	{
+		PrintError("main() -> listen()", true, NULL);
+		return EXIT_FAILURE;
+	}
+
+	/*
 	accept();
 
 	bind();
@@ -209,7 +213,8 @@ printf("%s", port);
 
 */
 
-	close(socketDescriptor);	// for testing
+	if(socketDescriptor != -1)
+		close(socketDescriptor);	// for testing
 
-	printf("ServerFunc main() exits now");
+	printf("ServerFunc main() exits now\n");
 }
