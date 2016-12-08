@@ -14,11 +14,12 @@
 #include <sys/socket.h>
 #include <netdb.h>
 #include <string.h>
+#include <stdbool.h>
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <errno.h>
 #include <limits.h>
-#include "simple_message_client_commandline_handling.h"
+#include "/usr/local/include/simple_message_client_commandline_handling.h"
 
 // Defines
 #define EXIT_SUCCESS 0
