@@ -24,7 +24,7 @@
 // Defines
 #define EXIT_SUCCESS 0
 #define EXIT_FAILURE 1
-#define size 1024
+#define size 8
 
 // Global variables
 const char * programName;
