@@ -166,16 +166,15 @@ int readResponse(int sfd)
 
     while(fgets(buffer, sizeof(buffer), fpr) != NULL)
     {
-        if (strstr(buffer, "</html>"))
-        {
-            secondFile = 1;
-        }
         if(secondFile == 0) {
             fprintf(fpresponse, "%s", buffer); /*error handling missing*/
         }
+        if (strstr(buffer, "</html>")) {
+            secondFile = 1;
+        }
         if (secondFile == 1)
         {
-            if(!(strstr(buffer, "file") || strstr(buffer, "len")))
+            if(!(strstr(buffer, "file") || strstr(buffer, "len") || strstr(buffer,"</html>")))
             {
                 fprintf(fpresponsePng, "%s", buffer); /*error handling missing*/
             }
