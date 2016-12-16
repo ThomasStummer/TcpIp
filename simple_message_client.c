@@ -151,7 +151,7 @@ void sendMessage(int sfd, const char* user, const char* message, const char* img
 
 int readResponse(int sfd)
 {
-    fpresponse = fopen("response.html", "w");
+    FILE *fpresponse = fopen("response.html", "w");
     char buffer[size];
 
     /* open read */
@@ -163,10 +163,10 @@ int readResponse(int sfd)
 
     while(fgets(buffer, sizeof(buffer), fpr) != NULL)
     {
-        fprintf(fpresponse, "%s", buffer);
+        fprintf(fpresponse, "%s", buffer); /*error handling missing*/
     }
 
-    return 0; //TODO: Change this.. should be return the server status. 
+    return 0; //TODO: Change this.. should be return the server status.
 }
 
 int main(int argc, const char **argv) {
