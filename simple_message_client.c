@@ -83,7 +83,7 @@ int CloseSocketDescriptor(int socketDescriptor)
     return EXIT_FAILURE;
 }
 
-void initSocketAndConnect(const char *server, const char *port, int socket)
+void initSocketAndConnect(const char *server, const char *port, int sfd)
 {
     struct addrinfo hints, *res;
 
@@ -112,10 +112,17 @@ void initSocketAndConnect(const char *server, const char *port, int socket)
         close(sfd);
     }
 
-    freeaddrinfo(res); 
+    freeaddrinfo(res);
+}
+
+void sendMessage(int sfd, const char* user, const char* message, const char* img_url)
+{
+    //There is something to do... 
 }
 
 int main(int argc, const char **argv) {
+
+    int sfd;
 
     /* check parameter */
     const char *server = NULL;
@@ -127,7 +134,8 @@ int main(int argc, const char **argv) {
 
     smc_parsecommandline(argc, argv, &usagefunc, &server, &port, &user, &message, &img_url, &verbose);
 
-    initSocketAndConnect();
+    initSocketAndConnect(server, port, &sfd);
+    sendMessage(sfd, user, message, img_url);
 
     return 0;
 }
