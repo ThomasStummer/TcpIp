@@ -172,6 +172,7 @@ int readResponse(int sfd)
 int main(int argc, const char **argv) {
 
     int sfd;
+    programName = argv[0]; 
 
     /* check parameter */
     const char *server = NULL;
