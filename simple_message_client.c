@@ -152,6 +152,7 @@ void sendMessage(int sfd, const char* user, const char* message, const char* img
 int readResponse(int sfd)
 {
     FILE *fpresponse = fopen("response.html", "w");
+    FILE *fpresponsePng = fopen("response.png", "w");
     char buffer[size];
 
     /* open read */
@@ -161,9 +162,24 @@ int readResponse(int sfd)
         printError("readResponse()", true, "fdopen with r doesn't work");
     }
 
+    int secondFile = 0;
+
     while(fgets(buffer, sizeof(buffer), fpr) != NULL)
     {
-        fprintf(fpresponse, "%s", buffer); /*error handling missing*/
+        if (strstr(buffer, "</html>"))
+        {
+            secondFile = 1;
+        }
+        if(secondFile == 0) {
+            fprintf(fpresponse, "%s", buffer); /*error handling missing*/
+        }
+        if (secondFile == 1)
+        {
+            if(!(strstr(buffer, "file") || strstr(buffer, "len")))
+            {
+                fprintf(fpresponsePng, "%s", buffer); /*error handling missing*/
+            }
+        }
     }
 
     return 0; //TODO: Change this.. should be return the server status.
