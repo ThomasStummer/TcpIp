@@ -84,7 +84,7 @@ int CloseSocketDescriptor(int socketDescriptor)
     return EXIT_FAILURE;
 }
 
-void initSocketAndConnect(const char *server, const char *port, int sfd)
+void initSocketAndConnect(const char *server, const char *port, int *sfd)
 {
     struct addrinfo hints, *res, *rp;
 
@@ -103,14 +103,14 @@ void initSocketAndConnect(const char *server, const char *port, int sfd)
     /* copy & paste from man page from getaddrinfo(3) */
     for (rp = res; rp != NULL; rp = rp->ai_next)
     {
-        sfd = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
+        *sfd = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
         if (sfd == -1)
             continue;
 
-        if (connect(sfd, rp->ai_addr, rp->ai_addrlen) != -1)
+        if (connect(*sfd, rp->ai_addr, rp->ai_addrlen) != -1)
             break;                  /* Success */
 
-        close(sfd);
+        close(*sfd);
     }
 
     freeaddrinfo(res);
@@ -172,7 +172,7 @@ int readResponse(int sfd)
 int main(int argc, const char **argv) {
 
     int sfd;
-    programName = argv[0]; 
+    programName = argv[0];
 
     /* check parameter */
     const char *server = NULL;
@@ -184,7 +184,7 @@ int main(int argc, const char **argv) {
 
     smc_parsecommandline(argc, argv, &usagefunc, &server, &port, &user, &message, &img_url, &verbose);
 
-    initSocketAndConnect(server, port, sfd);
+    initSocketAndConnect(server, port, &sfd);
     sendMessage(sfd, user, message, img_url);
     return readResponse(sfd);
 }
