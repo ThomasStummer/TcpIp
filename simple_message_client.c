@@ -24,6 +24,7 @@
 // Defines
 #define EXIT_SUCCESS 0
 #define EXIT_FAILURE 1
+#define size 1024
 
 // Global variables
 const char * programName;
@@ -120,6 +121,10 @@ void sendMessage(int sfd, const char* user, const char* message, const char* img
     int sdw = dup(sfd);
 
     FILE *fpw = fdopen(sdw, "w");
+    if (fpw == NULL)
+    {
+        printError("sendMessage()", true, "fdopen with w doesn't work");
+    }
 
     /* request with image url */
     if (!(img_url == NULL))
@@ -137,6 +142,31 @@ void sendMessage(int sfd, const char* user, const char* message, const char* img
         }
     }
 
+    /*close write */
+    fflush(fpw);
+    shutdown(sdw, SHUT_WR);
+    fclose(fpw);
+
+}
+
+int readResponse(int sfd)
+{
+    fpresponse = fopen("response.html", "w");
+    char buffer[size];
+
+    /* open read */
+    FILE *fpr = fdopen(sfd, "r");
+    if (fpr == NULL)
+    {
+        printError("readResponse()", true, "fdopen with r doesn't work");
+    }
+
+    while(fgets(buffer, sizeof(buffer), fpr) != NULL)
+    {
+        fprintf(fpresponse, "%s", buffer);
+    }
+
+    return 0; //TODO: Change this.. should be return the server status. 
 }
 
 int main(int argc, const char **argv) {
@@ -155,7 +185,6 @@ int main(int argc, const char **argv) {
 
     initSocketAndConnect(server, port, sfd);
     sendMessage(sfd, user, message, img_url);
-
-    return 0;
+    return readResponse(sfd);
 }
 
