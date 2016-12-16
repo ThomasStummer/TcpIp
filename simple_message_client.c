@@ -30,10 +30,10 @@ const char * programName;
 
 // Prototypes
 int CloseSocketDescriptor(int socketDescriptor);
-void PrintError(char * funcName, bool evalErrno, const char * message);
+void printError(char * funcName, bool evalErrno, const char * message);
 void usagefunc(FILE *outputStream, const char *programName, int exitCode);
 
-void PrintError(char * funcName, bool evalErrno, const char * message)
+void printError(char * funcName, bool evalErrno, const char * message)
 {
     fprintf(stderr, "Error in program ");
     fprintf(stderr, programName);
@@ -83,6 +83,37 @@ int CloseSocketDescriptor(int socketDescriptor)
     return EXIT_FAILURE;
 }
 
+void initSocketAndConnect(const char *server, const char *port, int socket)
+{
+    struct addrinfo hints, *res;
+
+    /* reset values */
+    memset(&hints, 0, sizeof(hints));
+    /* allow ipv4 and ipv6 */
+    hints.ai_family = AF_UNSPEC;
+    /* only tcp */
+    hints.ai_socktype = SOCK_STREAM;
+
+    if((getaddrinfo(server,port, &hints, &res)) != 0)
+    {
+        printError("initSocket", true, "Error getaddrinfo()");
+    }
+
+    /* copy & paste from man page from getaddrinfo(3) */
+    for (rp = res; rp != NULL; rp = rp->ai_next)
+    {
+        sfd = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
+        if (sfd == -1)
+            continue;
+
+        if (connect(sfd, rp->ai_addr, rp->ai_addrlen) != -1)
+            break;                  /* Success */
+
+        close(sfd);
+    }
+
+    freeaddrinfo(res); 
+}
 
 int main(int argc, const char **argv) {
 
@@ -95,6 +126,8 @@ int main(int argc, const char **argv) {
     int verbose = -1;
 
     smc_parsecommandline(argc, argv, &usagefunc, &server, &port, &user, &message, &img_url, &verbose);
+
+    initSocketAndConnect();
 
     return 0;
 }
