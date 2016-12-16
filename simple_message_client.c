@@ -36,20 +36,20 @@ void usagefunc(FILE *outputStream, const char *programName, int exitCode);
 void printError(char * funcName, bool evalErrno, const char * message)
 {
     fprintf(stderr, "Error in program ");
-    fprintf(stderr, programName);
+    fprintf(stderr, "%s", programName);
     fprintf(stderr, ": function ");
-    fprintf(stderr, funcName);
+    fprintf(stderr, "%s", funcName);
 
     if(message != NULL)
     {
         fprintf(stderr, ": ");
-        fprintf(stderr, message);
+        fprintf(stderr, "%s", message);
     }
 
     if(evalErrno)
     {
         fprintf(stderr, ": ");
-        fprintf(stderr, strerror(errno));
+        fprintf(stderr, "%s", strerror(errno));
     }
 
     fprintf(stderr, "\n");
@@ -75,7 +75,7 @@ int CloseSocketDescriptor(int socketDescriptor)
     {
         if(close(socketDescriptor) == -1)
         {
-            PrintError("CloseSocketDescriptor() -> close()", true, NULL);
+            printError("CloseSocketDescriptor() -> close()", true, NULL);
             return EXIT_FAILURE;
         }
         return EXIT_SUCCESS;
@@ -85,7 +85,7 @@ int CloseSocketDescriptor(int socketDescriptor)
 
 void initSocketAndConnect(const char *server, const char *port, int sfd)
 {
-    struct addrinfo hints, *res;
+    struct addrinfo hints, *res, *rp;
 
     /* reset values */
     memset(&hints, 0, sizeof(hints));
@@ -117,7 +117,26 @@ void initSocketAndConnect(const char *server, const char *port, int sfd)
 
 void sendMessage(int sfd, const char* user, const char* message, const char* img_url)
 {
-    //There is something to do... 
+    int sdw = dup(sfd);
+
+    FILE *fpw = fdopen(sdw, "w");
+
+    /* request with image url */
+    if (!(img_url == NULL))
+    {
+        if(fprintf(fpw, "user=%s\nimg=%s\n%s\n", user, img_url, message) < 0)
+        {
+            printError("sendMessage()", true, "error fprintf(fpw, \"user=%s\\nimg=%s\\n%s\\n\", user, img_url, message)");
+        }
+    }
+    else
+    {
+        if(fprintf(fpw, "user=%s\n%s\n", user, message) < 0)
+        {
+            printError("sendMessage()", true, "error fprintf(fpw, \"user=%s\\n%s\\n\", user, message)");
+        }
+    }
+
 }
 
 int main(int argc, const char **argv) {
@@ -134,7 +153,7 @@ int main(int argc, const char **argv) {
 
     smc_parsecommandline(argc, argv, &usagefunc, &server, &port, &user, &message, &img_url, &verbose);
 
-    initSocketAndConnect(server, port, &sfd);
+    initSocketAndConnect(server, port, sfd);
     sendMessage(sfd, user, message, img_url);
 
     return 0;
