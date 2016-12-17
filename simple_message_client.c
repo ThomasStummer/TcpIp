@@ -219,56 +219,57 @@ int readResponse(int sfd)
         read = getline(&line, &len, fpr);
         if (i == 0)
         {
-            sscanf(line, "status=%d", &status);
+                sscanf(line, "status=%d", &status);
         }
         if (i == 1)
         {
-            filenameHtml = (char*)realloc(filenameHtml,read);
-            if(filenameHtml == NULL)
-            {
-                printError("readResponse()", true, "no memory for realloc filenameHtml");
-            }
-            sscanf(line, "file=%s", filenameHtml);
+                filenameHtml = (char*)realloc(filenameHtml,read);
+                if(filenameHtml == NULL)
+                {
+                        printError("readResponse()", true, "no memory for realloc filenameHtml");
+                }
+                sscanf(line, "file=%s", filenameHtml);
         }
         if (i == 2)
         {
-            sscanf(line, "len=%d", &lengthHtml);
+                sscanf(line, "len=%d", &lengthHtml);
         }
     }
-    /* now we have all 3 parameters for the first response html thing */
-    FILE *fpResponseHtmlFile = fopen(filenameHtml, "w");
+        /* now we have all 3 parameters for the first response html thing */
+        FILE *fpResponseHtmlFile = fopen(filenameHtml, "w");
 
-    char buffer[lengthHtml];
+        char buffer[lengthHtml];
 
-    fread(buffer, 1, lengthHtml, fpr);
-    fwrite(buffer, lengthHtml, 1, fpResponseHtmlFile);
+        fread(buffer, 1, lengthHtml, fpr);
+        fwrite(buffer, lengthHtml, 1, fpResponseHtmlFile);
 
-    /* now it is time for the png */
-    for (i = 0; i < 3; i++) {
-        read = getline(&line, &len, fpr);
-        if (i == 0)
-        {
-            filenamePng = (char*)realloc(filenamePng, read);
-            if(filenamePng == NULL)
+        /* now it is time for the png */
+        for (i = 0; i < 3; i++) {
+            read = getline(&line, &len, fpr);
+            if (i == 0)
             {
-                printError("readResponse()", true, "no memory for realloc filenamePng");
+                filenamePng = (char*)realloc(filenamePng, read);
+                if(filenamePng == NULL)
+                {
+                        printError("readResponse()", true, "no memory for realloc filenamePng");
+                }
+                sscanf(line, "file=%s", filenamePng);
             }
-            sscanf(line, "file=%s", filenamePng);
+            if (i == 1)
+            {
+                sscanf(line, "len=%d", &lengthPng);
+            }
         }
-        if (i == 1)
-        {
-            sscanf(line, "len=%d", &lengthPng);
-        }
-    }
 
 
-    FILE *fpResponseHtmlPng = fopen(filenamePng, "w");
-    char bufferPng[lengthPng];
-    fread(bufferPng, 1, lengthPng, fpr);
-    fwrite(bufferPng, lengthPng, 1, fpResponseHtmlPng);
+        FILE *fpResponseHtmlPng = fopen(filenamePng, "w");
+        char bufferPng[lengthPng];
+        fread(bufferPng, 1, lengthPng, fpr);
+        fwrite(bufferPng, lengthPng, 1, fpResponseHtmlPng);
 
     return status;
 }
+
 
 int main(int argc, const char **argv) {
 
