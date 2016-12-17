@@ -1,10 +1,14 @@
 /*
  * @file simple_message_client.c
- * @author Thomas Stummer <thomas.stummer@technikum-wien.at>
- * @author Patrick Matula <patrick.matula@technikum-wien.at>
- * @version 1.0
- *
  * Verteilte Systeme - TCP/IP
+ * @author Thomas Stummer <ic15b079@technikum-wien.at>
+ * @author Patrick Matula <ic15b008@technikum-wien.at>
+ * @date 2016/12/10
+ * @version 1.0
+ */
+
+/*
+ * -------------------------------------------------------------- includes --
  */
 
 #include <stdio.h>
@@ -20,19 +24,41 @@
 #include <limits.h>
 #include "/usr/local/include/simple_message_client_commandline_handling.h"
 
-// Defines
+/*
+ * --------------------------------------------------------------- defines --
+ */
+
 #define EXIT_SUCCESS 0
 #define EXIT_FAILURE 1
 #define size 8
 
-// Global variables
+/*
+ * --------------------------------------------------------------- globals --
+ */
+
 const char * programName;
 
-// Prototypes
+/*
+ * ------------------------------------------------------------- prototypes --
+ */
+
 int CloseSocketDescriptor(int socketDescriptor);
 void printError(char * funcName, bool evalErrno, const char * message);
 void usagefunc(FILE *outputStream, const char *programName, int exitCode);
 
+/*
+ * ------------------------------------------------------------- functions --
+ */
+
+/**
+ *
+ * \brief Function for printing an error message
+ *
+ * \param funcName the name of the function that throws an error
+ * \param evalErrno for specifying if the error number shall be printed out
+ * \param message the message that shall be printed out
+ *
+ */
 void printError(char * funcName, bool evalErrno, const char * message)
 {
     fprintf(stderr, "Error in program ");
@@ -69,6 +95,16 @@ void usagefunc(FILE *outputStream, const char *programName, int exitCode){
     exit(exitCode);
 }
 
+/**
+ *
+ * \brief Function for closing a socket descriptor
+ *
+ * \param socketDescriptor the descriptor of the socket that shall be closed
+ *
+ * \return EXIT_SUCCESS in case of success
+ * \return EXIT_FAILURE in case of failure
+ *
+ */
 int CloseSocketDescriptor(int socketDescriptor)
 {
     if(socketDescriptor != -1)
@@ -254,3 +290,6 @@ int main(int argc, const char **argv) {
     return readResponse(sfd);
 }
 
+/*
+ * =================================================================== eof ==
+ */
