@@ -45,6 +45,9 @@ const char * programName;
 int CloseSocketDescriptor(int socketDescriptor);
 void printError(char * funcName, bool evalErrno, const char * message);
 void usagefunc(FILE *outputStream, const char *programName, int exitCode);
+void initSocketAndConnect(const char *server, const char *port, int *sfd);
+void sendMessage(int sfd, const char* user, const char* message, const char* img_url);
+int readResponse(int sfd);
 
 /*
  * ------------------------------------------------------------- functions --
@@ -81,6 +84,15 @@ void printError(char * funcName, bool evalErrno, const char * message)
     fprintf(stderr, "\n");
 }
 
+/**
+ *
+ * \brief Function for printing usage of the client
+ *
+ * \param outputStream the stream the usage shall be printed to
+ * \param programName the name of the client program
+ * \param exitCode the exit code of the client program
+ *
+ */
 void usagefunc(FILE *outputStream, const char *programName, int exitCode){
     fprintf(outputStream, "usage: %s\n", programName);
     fprintf(outputStream, "options:\n");
@@ -119,6 +131,15 @@ int CloseSocketDescriptor(int socketDescriptor)
     return EXIT_FAILURE;
 }
 
+/**
+ *
+ * \brief Function for initalising socket and connecting to server
+ *
+ * \param server the name or address of the server the client shall connect with
+ * \param port the port of the server the client shall connect with
+ * \param sfd the descriptor of the connected socket
+ *
+ */
 void initSocketAndConnect(const char *server, const char *port, int *sfd)
 {
     struct addrinfo hints, *res, *rp;
@@ -149,9 +170,18 @@ void initSocketAndConnect(const char *server, const char *port, int *sfd)
     }
 
     freeaddrinfo(res);
-    freeaddrinfo(rp);
 }
 
+/**
+ *
+ * \brief Function for initalising socket and connecting to server
+ *
+ * \param sfd the descriptor of the connected socket
+ * \param user the name of the user that uses the client
+ * \param message the text the user posts
+ * \param img_url the URL of the image the user posts
+ *
+ */
 void sendMessage(int sfd, const char* user, const char* message, const char* img_url)
 {
     int sdw = dup(sfd);
@@ -196,6 +226,15 @@ void sendMessage(int sfd, const char* user, const char* message, const char* img
     }
 }
 
+/**
+ *
+ * \brief main function for creating a simple message client
+ *
+ * \param sdf the descriptor of the connected socket
+ *
+ * \return status
+ *
+ */
 int readResponse(int sfd)
 {
     /* open read */
@@ -214,63 +253,99 @@ int readResponse(int sfd)
     int lengthPng = 0;
     int lengthHtml = 0;
     int read = 0;
+
     /* read first 3 lines */
-    for (i = 0; i < 3; i++) {
+    for (i = 0; i < 3; i++)
+    {
         read = getline(&line, &len, fpr);
-        if (i == 0)
+        if(read == -1)
         {
-                sscanf(line, "status=%d", &status);
+        	printError("readResponse()", true, "getline() failed");
         }
-        if (i == 1)
+
+        switch(i)
         {
-                filenameHtml = (char*)realloc(filenameHtml,read);
-                if(filenameHtml == NULL)
-                {
-                        printError("readResponse()", true, "no memory for realloc filenameHtml");
-                }
-                sscanf(line, "file=%s", filenameHtml);
-        }
-        if (i == 2)
-        {
-                sscanf(line, "len=%d", &lengthHtml);
+        	case 0:
+				if(sscanf(line, "status=%d", &status) == EOF)
+				{
+					printError("readResponse()", true, "sscanf() failed");
+				}
+				break;
+        	case 1:
+				filenameHtml = (char*)realloc(filenameHtml, read);
+				if(filenameHtml == NULL)
+				{
+					printError("readResponse()", true, "no memory for realloc filenameHtml");
+				}
+				if(sscanf(line, "file=%s", filenameHtml) == EOF)
+				{
+					printError("readResponse()", true, "sscanf() failed");
+				}
+				break;
+        	case 2:
+				if(sscanf(line, "len=%d", &lengthHtml) == EOF)
+				{
+					printError("readResponse()", true, "sscanf() failed");
+				}
+				break;
         }
     }
-        /* now we have all 3 parameters for the first response html thing */
-        FILE *fpResponseHtmlFile = fopen(filenameHtml, "w");
+	/* now we have all 3 parameters for the first response html thing */
+	FILE *fpResponseHtmlFile = fopen(filenameHtml, "w");
+	if(fpResponseHtmlFile == NULL)
+	{
+		printError("readResponse()", true, "fopen(filenameHtml, 'w') failed");
+	}
 
-        char buffer[lengthHtml];
+	char buffer[lengthHtml];
 
-        fread(buffer, 1, lengthHtml, fpr);
-        fwrite(buffer, lengthHtml, 1, fpResponseHtmlFile);
+	if(fread(buffer, 1, lengthHtml, fpr) != 1)
+	{
+		printError("readResponse()", true, "fread() failed");
+	}
 
-        /* now it is time for the png */
-        for (i = 0; i < 3; i++) {
-            read = getline(&line, &len, fpr);
-            if (i == 0)
-            {
-                filenamePng = (char*)realloc(filenamePng, read);
-                if(filenamePng == NULL)
-                {
-                        printError("readResponse()", true, "no memory for realloc filenamePng");
-                }
-                sscanf(line, "file=%s", filenamePng);
-            }
-            if (i == 1)
-            {
-                sscanf(line, "len=%d", &lengthPng);
-            }
-        }
+	if(fwrite(buffer, lengthHtml, 1, fpResponseHtmlFile) != 1)
+	{
+		printError("readResponse()", true, "fwrite() failed");
+	}
+
+	/* now it is time for the png */
+	for (i = 0; i < 3; i++) {
+		read = getline(&line, &len, fpr);
+		if (i == 0)
+		{
+			filenamePng = (char*)realloc(filenamePng, read);
+			if(filenamePng == NULL)
+			{
+					printError("readResponse()", true, "no memory for realloc filenamePng");
+			}
+			sscanf(line, "file=%s", filenamePng);
+		}
+		if (i == 1)
+		{
+			sscanf(line, "len=%d", &lengthPng);
+		}
+	}
 
 
-        FILE *fpResponseHtmlPng = fopen(filenamePng, "w");
-        char bufferPng[lengthPng];
-        fread(bufferPng, 1, lengthPng, fpr);
-        fwrite(bufferPng, lengthPng, 1, fpResponseHtmlPng);
+	FILE *fpResponseHtmlPng = fopen(filenamePng, "w");
+	char bufferPng[lengthPng];
+	fread(bufferPng, 1, lengthPng, fpr);
+	fwrite(bufferPng, lengthPng, 1, fpResponseHtmlPng);
 
     return status;
 }
 
-
+/**
+ *
+ * \brief main function for creating a simple message client
+ *
+ * \param argc the number of arguments
+ * \param argv the arguments itselves (including the program name in argv[0])
+ *
+ * \return status of the readResponse function
+ *
+ */
 int main(int argc, const char **argv) {
 
     int sfd;
@@ -286,8 +361,11 @@ int main(int argc, const char **argv) {
 
     smc_parsecommandline(argc, argv, &usagefunc, &server, &port, &user, &message, &img_url, &verbose);
 
+    printError("Debug", false, "Line 2");
     initSocketAndConnect(server, port, &sfd);
+    printError("Debug", false, "Line 3");
     sendMessage(sfd, user, message, img_url);
+    printError("Debug", false, "Line 4");
     return readResponse(sfd);
 }
 
