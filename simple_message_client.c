@@ -1,5 +1,4 @@
 /*
-* hallo
  * @file simple_message_client.c
  * @author Thomas Stummer <thomas.stummer@technikum-wien.at>
  * @author Patrick Matula <patrick.matula@technikum-wien.at>
@@ -104,7 +103,7 @@ void initSocketAndConnect(const char *server, const char *port, int *sfd)
     for (rp = res; rp != NULL; rp = rp->ai_next)
     {
         *sfd = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
-        if (sfd == -1)
+        if (*sfd == -1)
             continue;
 
         if (connect(*sfd, rp->ai_addr, rp->ai_addrlen) != -1)
@@ -114,16 +113,23 @@ void initSocketAndConnect(const char *server, const char *port, int *sfd)
     }
 
     freeaddrinfo(res);
+    freeaddrinfo(rp);
 }
 
 void sendMessage(int sfd, const char* user, const char* message, const char* img_url)
 {
     int sdw = dup(sfd);
+    if(sdw == -1)
+    {
+        printError("sendMessage()", true, "error with dup(sfd)");
+        return;
+    }
 
     FILE *fpw = fdopen(sdw, "w");
     if (fpw == NULL)
     {
         printError("sendMessage()", true, "fdopen with w doesn't work");
+	    return;
     }
 
     /* request with image url */
@@ -144,9 +150,14 @@ void sendMessage(int sfd, const char* user, const char* message, const char* img
 
     /*close write */
     fflush(fpw);
-    shutdown(sdw, SHUT_WR);
-    fclose(fpw);
-
+    if(shutdown(sdw, SHUT_WR) != 0)
+    {
+	    printError("sendMessage()", true, "error shutdown(sdw, SHUT_WR)");
+    }
+    if(fclose(fpw) != 0)
+    {
+	    printError("sendMessage()", true, "error fclose(fpw)");
+    }
 }
 
 int readResponse(int sfd)
