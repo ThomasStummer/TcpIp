@@ -162,10 +162,6 @@ void sendMessage(int sfd, const char* user, const char* message, const char* img
 
 int readResponse(int sfd)
 {
-    FILE *fpresponse = fopen("response.html", "w");
-    FILE *fpresponsePng = fopen("response.png", "w");
-    char buffer[size];
-
     /* open read */
     FILE *fpr = fdopen(sfd, "r");
     if (fpr == NULL)
@@ -173,26 +169,69 @@ int readResponse(int sfd)
         printError("readResponse()", true, "fdopen with r doesn't work");
     }
 
-    int secondFile = 0;
-
-    while(fgets(buffer, sizeof(buffer), fpr) != NULL)
-    {
-        if(secondFile == 0) {
-            fprintf(fpresponse, "%s", buffer); /*error handling missing*/
-        }
-        if (strstr(buffer, "</html>")) {
-            secondFile = 1;
-        }
-        if (secondFile == 1)
+    char * line = NULL;
+    size_t len = 0;
+    int i = 0;
+    int status = 0;
+    char *filenameHtml = NULL;
+    char *filenamePng = NULL;
+    int lengthPng = 0;
+    int lengthHtml = 0;
+    int read = 0;
+    /* read first 3 lines */
+    for (i = 0; i < 3; i++) {
+        read = getline(&line, &len, fpr);
+        if (i == 0)
         {
-            if(!(strstr(buffer, "file") || strstr(buffer, "len") || strstr(buffer,"</html>")))
+            sscanf(line, "status=%d", &status);
+        }
+        if (i == 1)
+        {
+            filenameHtml = (char*)realloc(filenameHtml,read);
+            if(filenameHtml == NULL)
             {
-                fprintf(fpresponsePng, "%s", buffer); /*error handling missing*/
+                printError("readResponse()", true, "no memory for realloc filenameHtml");
             }
+            sscanf(line, "file=%s", filenameHtml);
+        }
+        if (i == 2)
+        {
+            sscanf(line, "len=%d", &lengthHtml);
+        }
+    }
+    /* now we have all 3 parameters for the first response html thing */
+    FILE *fpResponseHtmlFile = fopen(filenameHtml, "w");
+
+    char buffer[lengthHtml];
+
+    fread(buffer, 1, lengthHtml, fpr);
+    fwrite(buffer, lengthHtml, 1, fpResponseHtmlFile);
+
+    /* now it is time for the png */
+    for (i = 0; i < 3; i++) {
+        read = getline(&line, &len, fpr);
+        if (i == 0)
+        {
+            filenamePng = (char*)realloc(filenamePng, read);
+            if(filenamePng == NULL)
+            {
+                printError("readResponse()", true, "no memory for realloc filenamePng");
+            }
+            sscanf(line, "file=%s", filenamePng);
+        }
+        if (i == 1)
+        {
+            sscanf(line, "len=%d", &lengthPng);
         }
     }
 
-    return 0; //TODO: Change this.. should be return the server status.
+
+    FILE *fpResponseHtmlPng = fopen(filenamePng, "w");
+    char bufferPng[lengthPng];
+    fread(bufferPng, 1, lengthPng, fpr);
+    fwrite(bufferPng, lengthPng, 1, fpResponseHtmlPng);
+
+    return status;
 }
 
 int main(int argc, const char **argv) {
