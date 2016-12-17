@@ -1,15 +1,16 @@
 /*
- * simple_message_server.c
- *
- *  VCS - TCP/IP
- *  BIC
- *  3A1
- *
- *  Authors: ic15b008 Matula Patrick
- *    		 ic15b079 Stummer Thomas
+ * @file simple_message_server.c
+ * Verteilte Systeme - TCP/IP
+ * @author Thomas Stummer <ic15b079@technikum-wien.at>
+ * @author Patrick Matula <ic15b008@technikum-wien.at>
+ * @date 2016/12/10
+ * @version 1.0
  */
 
-// Includes
+/*
+ * -------------------------------------------------------------- includes --
+ */
+
 #include <stdio.h>
 #include <errno.h>
 #include <stdbool.h>
@@ -22,33 +23,53 @@
 #include <unistd.h>
 #include <signal.h>
 
-// Defines
+/*
+ * --------------------------------------------------------------- defines --
+ */
+
 #define EXIT_SUCCESS 0
 #define EXIT_FAILURE 1
 #define BACKLOG 10
 #define SERVER_LOGIC_PATH "/usr/local/bin/simple_message_server_logic"
 #define SERVER_LOGIC_FILE "simple_message_server_logic"
 
-// Global variables
+/*
+ * --------------------------------------------------------------- globals --
+ */
+
 const char * programName;
 const char * usageText = 	"usage: simple_message_server options\n"
 							"options:\n"
 							"\t-p, --port <port>	port of the server [0..65535]\n"
 							"\t-h, --help\n";
 
-// Prototypes
+/*
+ * ------------------------------------------------------------- prototypes --
+ */
+
 void PrintError(char * funcName, bool evalErrno, const char * message);
 int ParseCommandLine(int argc, const char * const argv[], const char **port);
 int CreateSignalHandler(void);
 void SignalHandler(int signal);
 int SpecifyAddrInfo(struct addrinfo * hints);
 int CloseSocketDescriptor(int socketDescriptor);
-int CreateAndBindListeningSocket(const char * port, int * socketDescriptor, struct addrinfo ** addrInfoResultsPtr);
-int AcceptIncomingConnections(int socketDescriptor , struct addrinfo ** addrInfoResultsPtr);
+int CreateAndBindListeningSocket(const char * port, int * socketDescriptor, struct addrinfo * addrInfoResultsPtr);
+int AcceptIncomingConnections(int socketDescriptor , struct addrinfo * addrInfoResultsPtr);
 int Spawn(int socketDescriptor, int acceptedSocketDescriptor);
 
-// Functions
+/*
+ * ------------------------------------------------------------- functions --
+ */
 
+/**
+ *
+ * \brief Function for printing an error message
+ *
+ * \param funcName the name of the function that throws an error
+ * \param evalErrno for specifying if the error number shall be printed out
+ * \param message the message that shall be printed out
+ *
+ */
 void PrintError(char * funcName, bool evalErrno, const char * message)
 {
 	fprintf(stderr, "Error in program ");
@@ -71,6 +92,15 @@ void PrintError(char * funcName, bool evalErrno, const char * message)
 	fprintf(stderr, "\n");
 }
 
+/**
+ *
+ * \brief Function for parsing the command line arguments
+ *
+ * \param argc the number of arguments
+ * \param argv the arguments itselves
+ * \param port the port the server shall be bound to
+ *
+ */
 int ParseCommandLine(int argc, const char * const argv[], const char **port)
 {
     int c;
@@ -121,6 +151,11 @@ int ParseCommandLine(int argc, const char * const argv[], const char **port)
     return EXIT_SUCCESS;
 }
 
+/**
+ *
+ * \brief function for creating a signal handler
+ *
+ */
 int CreateSignalHandler()
 {
 	struct sigaction signalAction;
@@ -137,6 +172,13 @@ int CreateSignalHandler()
 	return EXIT_SUCCESS;
 }
 
+/**
+ *
+ * \brief Function for processing signals
+ *
+ * \param signal the signal that shall be handled
+ *
+ */
 void SignalHandler(int signal)
 {
 	while (waitpid(-1, NULL, WNOHANG) > 0);
@@ -145,6 +187,16 @@ void SignalHandler(int signal)
 	// WNNOHANG ... waitpid returns immediately if no child has exited
 }
 
+/**
+ *
+ * \brief Function for specifying the address infos of the server
+ *
+ * \param hints the pointer to the address infos of the server
+ *
+ * \return EXIT_SUCCESS in case of success
+ * \return EXIT_FAILURE in case of failure
+ *
+ */
 int SpecifyAddrInfo(struct addrinfo * hints)
 {
 	memset(hints, 0, sizeof(struct addrinfo));
@@ -154,6 +206,16 @@ int SpecifyAddrInfo(struct addrinfo * hints)
 	return EXIT_SUCCESS;
 }
 
+/**
+ *
+ * \brief Function for closing a socket descriptor
+ *
+ * \param socketDescriptor the descriptor of the socket that shall be closed
+ *
+ * \return EXIT_SUCCESS in case of success
+ * \return EXIT_FAILURE in case of failure
+ *
+ */
 int CloseSocketDescriptor(int socketDescriptor)
 {
 	if(socketDescriptor != -1)
@@ -168,7 +230,19 @@ int CloseSocketDescriptor(int socketDescriptor)
 	return EXIT_FAILURE;
 }
 
-int CreateAndBindListeningSocket(const char * port, int * socketDescriptor, struct addrinfo ** addrInfoResultsPtr)
+/**
+ *
+ * \brief Function for creating and binding a listening socket
+ *
+ * \param port of the server
+ * \param socketDescriptor the descriptor of the socket that shall be bound
+ * \param addrInfoResultsPtr the reference to the pointer to the address info results
+ *
+ * \return EXIT_SUCCESS in case of success
+ * \return EXIT_FAILURE in case of failure
+ *
+ */
+int CreateAndBindListeningSocket(const char * port, int * socketDescriptor, struct addrinfo * addrInfoResultsPtr)
 {
 	struct addrinfo addrInfoSettings;
 	struct addrinfo * addrInfoResults;
@@ -187,21 +261,21 @@ int CreateAndBindListeningSocket(const char * port, int * socketDescriptor, stru
 		return EXIT_FAILURE;
 	}
 
-	for(*addrInfoResultsPtr = addrInfoResults;
-		*addrInfoResultsPtr != NULL;
-		*addrInfoResultsPtr = (*addrInfoResultsPtr)->ai_next)
+	for(addrInfoResultsPtr = addrInfoResults;
+		addrInfoResultsPtr != NULL;
+		addrInfoResultsPtr = addrInfoResultsPtr->ai_next)
 	{
-		*socketDescriptor = socket((*addrInfoResultsPtr)->ai_family,
-									(*addrInfoResultsPtr)->ai_socktype,
-									(*addrInfoResultsPtr)->ai_protocol);
+		*socketDescriptor = socket(addrInfoResultsPtr->ai_family,
+									addrInfoResultsPtr->ai_socktype,
+									addrInfoResultsPtr->ai_protocol);
 		if(*socketDescriptor == -1)
 		{
 			continue;	// Try next
 		}
 
 		if(bind(*socketDescriptor,
-				(*addrInfoResultsPtr)->ai_addr,
-				(*addrInfoResultsPtr)->ai_addrlen) == 0)
+				addrInfoResultsPtr->ai_addr,
+				addrInfoResultsPtr->ai_addrlen) == 0)
 		{
 			break;	// Success
 		}
@@ -214,7 +288,7 @@ int CreateAndBindListeningSocket(const char * port, int * socketDescriptor, stru
 		}
 	}
 
-	if(*addrInfoResultsPtr == NULL)
+	if(addrInfoResultsPtr == NULL)
 	{
 		// Wasn't able to bind any address
 		PrintError("CreateAndBindSocket()", true, "Could not bind to any address");
@@ -233,14 +307,25 @@ int CreateAndBindListeningSocket(const char * port, int * socketDescriptor, stru
 	return EXIT_SUCCESS;
 }
 
-int AcceptIncomingConnections(int socketDescriptor , struct addrinfo ** addrInfoResultsPtr)
+/**
+ *
+ * \brief Function for accepting incoming connections
+ *
+ * \param socketDescriptor the descriptor of the bound socket
+ * \param addrInfoResultsPtr the reference to the pointer to the address info results
+ *
+ * \return EXIT_SUCCESS in case of success
+ * \return EXIT_FAILURE in case of failure
+ *
+ */
+int AcceptIncomingConnections(int socketDescriptor , struct addrinfo * addrInfoResultsPtr)
 {
 	int acceptedSocketDescriptor = 0;
 
 	for(;;)
 	{
 		// Accept incoming connection
-		acceptedSocketDescriptor = accept(socketDescriptor, (*addrInfoResultsPtr)->ai_addr, &((*addrInfoResultsPtr)->ai_addrlen));
+		acceptedSocketDescriptor = accept(socketDescriptor, addrInfoResultsPtr->ai_addr, &(addrInfoResultsPtr->ai_addrlen));
 		if(acceptedSocketDescriptor == -1)
 		{
 			PrintError("AcceptIncomingConnections() -> accept()", true, NULL);
@@ -257,6 +342,17 @@ int AcceptIncomingConnections(int socketDescriptor , struct addrinfo ** addrInfo
 	return EXIT_SUCCESS;
 }
 
+/**
+ *
+ * \brief Spawn function for executing server logic in a forked process
+ *
+ * \param socketDescriptor the descriptor of the bound socket
+ * \param acceptedSocketDescriptor the descriptor of the accepted connection
+ *
+ * \return EXIT_SUCCESS in case of success
+ * \return EXIT_FAILURE in case of failure
+ *
+ */
 int Spawn(int socketDescriptor, int acceptedSocketDescriptor)
 {
 	pid_t pid = -1;
@@ -325,6 +421,17 @@ int Spawn(int socketDescriptor, int acceptedSocketDescriptor)
 	}
 }
 
+/**
+ *
+ * \brief main function for creating a simple message server
+ *
+ * \param argc the number of arguments
+ * \param argv the arguments itselves (including the program name in argv[0])
+ *
+ * \return EXIT_SUCCESS in case of success
+ * \return EXIT_FAILURE in case of failure
+ *
+ */
 int main(int argc, const char * const argv[])
 {
 	struct addrinfo * addrInfoResultsPtr;
@@ -349,14 +456,14 @@ int main(int argc, const char * const argv[])
 	}
 
 	// Set up and bind socket
-	if(CreateAndBindListeningSocket(port, &socketDescriptor, &addrInfoResultsPtr) == EXIT_FAILURE)
+	if(CreateAndBindListeningSocket(port, &socketDescriptor, addrInfoResultsPtr) == EXIT_FAILURE)
 	{
 		PrintError("main() -> CreateAndBindSocket()", false, NULL);
 		return EXIT_FAILURE;
 	}
 
 	// Accept incoming connections
-	if(AcceptIncomingConnections(socketDescriptor, &addrInfoResultsPtr) == EXIT_FAILURE)
+	if(AcceptIncomingConnections(socketDescriptor, addrInfoResultsPtr) == EXIT_FAILURE)
 	{
 		PrintError("main() -> AcceptIncomingConnections()", false, NULL);
 		return EXIT_FAILURE;
@@ -371,3 +478,7 @@ int main(int argc, const char * const argv[])
 
 	return EXIT_SUCCESS;
 }
+
+/*
+ * =================================================================== eof ==
+ */
