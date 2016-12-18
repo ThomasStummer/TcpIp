@@ -299,7 +299,7 @@ int readResponse(int sfd)
 	char buffer[lengthHtml];
 
     verboseOutput("Function readResponse() :: Read from socket for HTML file.");
-	if(fread(buffer, 1, lengthHtml, fpr) != 1)
+	if(fread(buffer, 1, lengthHtml, fpr) != lengthHtml)
 	{
 		printError("readResponse()", true, "fread() failed");
 	}
@@ -351,7 +351,7 @@ int readResponse(int sfd)
 	char bufferPng[lengthPng];
 
     verboseOutput("Function readResponse() :: read from socket to buffer (png).");
-	if(fread(bufferPng, 1, lengthPng, fpr) != 1)
+	if(fread(bufferPng, 1, lengthPng, fpr) != lengthPng)
     {
         printError("readResponse()", true, "fread() for png failed");
     }
