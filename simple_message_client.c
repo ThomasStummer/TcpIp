@@ -386,6 +386,30 @@ int readResponse(int sfd)
         printError("readResponse()", true, "fread() for png failed");
     }
 
+    /* Free allocated memory */
+    free(filenameHtml);
+    free(filenamePng);
+    verboseOutput("Function readResponse() :: Freed filenameHtml and filenamePng");
+    
+    /* Closing file pointers */
+    if(fclose(fpResponseHtmlFile) != 0)
+    {
+    	printError("readResponse()", true, "error fclose(fpResponseHtmlFile)");
+    }
+    verboseOutput("Function readResponse() :: closed fpResponseHtmlFile");
+    
+    if(fclose(fpResponseHtmlPng) != 0)
+    {
+    	printError("readResponse()", true, "error fclose(fpResponseHtmlPng)");
+    }
+	verboseOutput("Function readResponse() :: closed fpResponseHtmlPng");
+
+	if(fclose(fpr) != 0)
+	{
+		printError("readResponse()", true, "error fclose(fpr)");	
+	}
+	verboseOutput("Function readResponse() :: closed fpr");
+	
     verboseOutput("Function readResponse() :: everything done. return with right exit value.");
     return status;
 }
