@@ -390,6 +390,13 @@ int readResponse(int sfd)
     return status;
 }
 
+/**
+ *
+ * \brief function for printing verbose output
+ *
+ * \param text the text to print
+ *
+ */
 void verboseOutput(const char *text)
 {
     if(verbose)
