@@ -53,8 +53,8 @@ int CreateSignalHandler(void);
 void SignalHandler(int signal);
 int SpecifyAddrInfo(struct addrinfo * hints);
 int CloseSocketDescriptor(int socketDescriptor);
-int CreateAndBindListeningSocket(const char * port, int * socketDescriptor, struct addrinfo * addrInfoResultsPtr);
-int AcceptIncomingConnections(int socketDescriptor , struct addrinfo * addrInfoResultsPtr);
+int CreateAndBindListeningSocket(const char * port, int * socketDescriptor, struct addrinfo ** addrInfoResultsPtr);
+int AcceptIncomingConnections(int socketDescriptor , struct addrinfo ** addrInfoResultsPtr);
 int Spawn(int socketDescriptor, int acceptedSocketDescriptor);
 
 /*
@@ -236,13 +236,13 @@ int CloseSocketDescriptor(int socketDescriptor)
  *
  * \param port of the server
  * \param socketDescriptor the descriptor of the socket that shall be bound
- * \param addrInfoResultsPtr the reference to the pointer to the address info results
+ * \param addrInfoResultsPtr the pointer to the address info results
  *
  * \return EXIT_SUCCESS in case of success
  * \return EXIT_FAILURE in case of failure
  *
  */
-int CreateAndBindListeningSocket(const char * port, int * socketDescriptor, struct addrinfo * addrInfoResultsPtr)
+int CreateAndBindListeningSocket(const char * port, int * socketDescriptor, struct addrinfo ** addrInfoResultsPtr)
 {
 	struct addrinfo addrInfoSettings;
 	struct addrinfo * addrInfoResults;
@@ -261,21 +261,21 @@ int CreateAndBindListeningSocket(const char * port, int * socketDescriptor, stru
 		return EXIT_FAILURE;
 	}
 
-	for(addrInfoResultsPtr = addrInfoResults;
-		addrInfoResultsPtr != NULL;
-		addrInfoResultsPtr = addrInfoResultsPtr->ai_next)
+	for(*addrInfoResultsPtr = addrInfoResults;
+		*addrInfoResultsPtr != NULL;
+		*addrInfoResultsPtr = (*addrInfoResultsPtr)->ai_next)
 	{
-		*socketDescriptor = socket(addrInfoResultsPtr->ai_family,
-									addrInfoResultsPtr->ai_socktype,
-									addrInfoResultsPtr->ai_protocol);
+		*socketDescriptor = socket((*addrInfoResultsPtr)->ai_family,
+									(*addrInfoResultsPtr)->ai_socktype,
+									(*addrInfoResultsPtr)->ai_protocol);
 		if(*socketDescriptor == -1)
 		{
 			continue;	// Try next
 		}
 
 		if(bind(*socketDescriptor,
-				addrInfoResultsPtr->ai_addr,
-				addrInfoResultsPtr->ai_addrlen) == 0)
+				(*addrInfoResultsPtr)->ai_addr,
+				(*addrInfoResultsPtr)->ai_addrlen) == 0)
 		{
 			break;	// Success
 		}
@@ -288,7 +288,7 @@ int CreateAndBindListeningSocket(const char * port, int * socketDescriptor, stru
 		}
 	}
 
-	if(addrInfoResultsPtr == NULL)
+	if(*addrInfoResultsPtr == NULL)
 	{
 		// Wasn't able to bind any address
 		PrintError("CreateAndBindSocket()", true, "Could not bind to any address");
@@ -312,20 +312,20 @@ int CreateAndBindListeningSocket(const char * port, int * socketDescriptor, stru
  * \brief Function for accepting incoming connections
  *
  * \param socketDescriptor the descriptor of the bound socket
- * \param addrInfoResultsPtr the reference to the pointer to the address info results
+ * \param addrInfoResultsPtr the pointer to the address info results
  *
  * \return EXIT_SUCCESS in case of success
  * \return EXIT_FAILURE in case of failure
  *
  */
-int AcceptIncomingConnections(int socketDescriptor , struct addrinfo * addrInfoResultsPtr)
+int AcceptIncomingConnections(int socketDescriptor , struct addrinfo ** addrInfoResultsPtr)
 {
 	int acceptedSocketDescriptor = 0;
 
 	for(;;)
 	{
 		// Accept incoming connection
-		acceptedSocketDescriptor = accept(socketDescriptor, addrInfoResultsPtr->ai_addr, &(addrInfoResultsPtr->ai_addrlen));
+		acceptedSocketDescriptor = accept(socketDescriptor, (*addrInfoResultsPtr)->ai_addr, &((*addrInfoResultsPtr)->ai_addrlen));
 		if(acceptedSocketDescriptor == -1)
 		{
 			PrintError("AcceptIncomingConnections() -> accept()", true, NULL);
@@ -456,14 +456,14 @@ int main(int argc, const char * const argv[])
 	}
 
 	// Set up and bind socket
-	if(CreateAndBindListeningSocket(port, &socketDescriptor, addrInfoResultsPtr) == EXIT_FAILURE)
+	if(CreateAndBindListeningSocket(port, &socketDescriptor, &addrInfoResultsPtr) == EXIT_FAILURE)
 	{
 		PrintError("main() -> CreateAndBindSocket()", false, NULL);
 		return EXIT_FAILURE;
 	}
 
 	// Accept incoming connections
-	if(AcceptIncomingConnections(socketDescriptor, addrInfoResultsPtr) == EXIT_FAILURE)
+	if(AcceptIncomingConnections(socketDescriptor, &addrInfoResultsPtr) == EXIT_FAILURE)
 	{
 		PrintError("main() -> AcceptIncomingConnections()", false, NULL);
 		return EXIT_FAILURE;
@@ -482,3 +482,4 @@ int main(int argc, const char * const argv[])
 /*
  * =================================================================== eof ==
  */
+
