@@ -42,7 +42,6 @@ int verbose = false;
  * ------------------------------------------------------------- prototypes --
  */
 
-int CloseSocketDescriptor(int socketDescriptor);
 void printError(char * funcName, bool evalErrno, const char * message);
 void usagefunc(FILE *outputStream, const char *programName, int exitCode);
 void initSocketAndConnect(const char *server, const char *port, int *sfd);
@@ -106,30 +105,6 @@ void usagefunc(FILE *outputStream, const char *programName, int exitCode){
     fprintf(outputStream, "-h, --help");
 
     exit(exitCode);
-}
-
-/**
- *
- * \brief Function for closing a socket descriptor
- *
- * \param socketDescriptor the descriptor of the socket that shall be closed
- *
- * \return EXIT_SUCCESS in case of success
- * \return EXIT_FAILURE in case of failure
- *
- */
-int CloseSocketDescriptor(int socketDescriptor)
-{
-    if(socketDescriptor != -1)
-    {
-        if(close(socketDescriptor) == -1)
-        {
-            printError("CloseSocketDescriptor() -> close()", true, NULL);
-            return EXIT_FAILURE;
-        }
-        return EXIT_SUCCESS;
-    }
-    return EXIT_FAILURE;
 }
 
 /**
