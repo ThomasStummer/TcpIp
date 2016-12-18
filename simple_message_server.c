@@ -22,6 +22,7 @@
 #include <netdb.h>
 #include <unistd.h>
 #include <signal.h>
+#include <sys/wait.h>
 
 /*
  * --------------------------------------------------------------- defines --
@@ -73,20 +74,20 @@ int Spawn(int socketDescriptor, int acceptedSocketDescriptor);
 void PrintError(char * funcName, bool evalErrno, const char * message)
 {
 	fprintf(stderr, "Error in program ");
-	fprintf(stderr, programName);
+	fprintf(stderr, "%s" ,programName);
 	fprintf(stderr, ": function ");
-	fprintf(stderr, funcName);
+	fprintf(stderr, "%s" ,funcName);
 
 	if(message != NULL)
 	{
 		fprintf(stderr, ": ");
-		fprintf(stderr, message);
+		fprintf(stderr, "%s" ,message);
 	}
 
 	if(evalErrno)
 	{
 		fprintf(stderr, ": ");
-		fprintf(stderr, strerror(errno));
+		fprintf(stderr, "%s" ,strerror(errno));
 	}
 
 	fprintf(stderr, "\n");
@@ -131,13 +132,13 @@ int ParseCommandLine(int argc, const char * const argv[], const char **port)
                 break;
 
             case 'h':
-            	fprintf(stdout, usageText);
+            	fprintf(stdout, "%s" ,usageText);
             	return EXIT_FAILURE;
                 break;
 
             case '?':
             default:
-            	fprintf(stderr, usageText);
+            	fprintf(stderr, "%s" ,usageText);
                 return EXIT_FAILURE;
                 break;
         }
@@ -145,7 +146,7 @@ int ParseCommandLine(int argc, const char * const argv[], const char **port)
 
     if ( (optind != argc) || (*port == NULL) )
     {
-    	fprintf(stderr, usageText);
+    	fprintf(stderr, "%s" ,usageText);
     	return EXIT_FAILURE;
     }
     return EXIT_SUCCESS;
