@@ -358,7 +358,7 @@ int readResponse(int sfd)
     verboseOutput("Function readResponse() :: write from buffer to file (png).");
     if(fwrite(bufferPng, lengthPng, 1, fpResponseHtmlPng) != 1)
     {
-        printError("readResponse()", true, "fread() for png failed");
+        printError("readResponse()", true, "fwrite() for png failed");
     }
 
     /* Free allocated memory */
